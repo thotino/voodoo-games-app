@@ -107,3 +107,34 @@ describe('GET /api/games', () => {
     });
 });
 
+/**
+ * Testing the search endpoint
+ */
+ describe('POST /api/games/search', () => {
+    const data = {
+        name: null, platform: null
+    }
+   it('respond respond with a 200 status code and an empty array', async () => {
+       const { body, status } = await request(app)
+           .post('/api/games/search')
+           .set('Accept', 'application/json')
+           .send(data)
+       assert.strictEqual(status, 200);
+       assert.strictEqual(body.length, 0);
+   });
+});
+
+
+/**
+ * Testing the populate top 100 games endpoint
+ */
+ describe('POST /api/games/populate', () => {
+    it('respond with a 200 status code and a validation of the update', async () => {
+        const { body, status } = await request(app)
+            .post('/api/games/populate')
+            .set('Accept', 'application/json')
+        assert.strictEqual(status, 200);
+        assert.strictEqual(body.updated, true);
+    }).timeout(20000);
+});
+

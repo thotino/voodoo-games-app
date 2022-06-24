@@ -70,6 +70,3 @@ every day through the populate API. Could you describe a suitable solution to au
 #### Question 3:
 Both the current database schema and the files dropped in the S3 bucket are not optimal.
 Can you find ways to improve them?
-
-
-
