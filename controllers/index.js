@@ -1,6 +1,7 @@
 /* eslint-disable max-len */
 const axios = require('axios')
 const lodash = require('lodash')
+const { Op } = require('sequelize')
 const config = require('../config')
 const db = require('../models');
 
@@ -85,16 +86,13 @@ const searchGames = async (req, res) => {
     try {
       console.log(`name: ${name}, platform: ${platform}`)
       // No search specified case
-      if (!name && !platform) {
+      if (!name || !platform) {
         const allGames = await db.Game.findAll()
         return res.send(allGames)
       }
-      const nameRegex = new RegExp(name, 'ig')
       // Search the entities that match the platform
-      const games = await db.Game.findAll({ where: { platform } })
-      // Filter on the entities that fully or partially match the name
-      const filteredGames = games.filter(({ name }) => (nameRegex.test(name)))
-      return res.send(filteredGames)
+      const games = await db.Game.findAll({ where: { [Op.and]: [{ platform }, { name: { [Op.like]: `%${name}%` } }] } })
+      return res.send(games)
     } catch (error) {
       console.error('***Error searching games', error);
       return res.status(400).send(error);
