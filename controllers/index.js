@@ -29,10 +29,13 @@ const retrieveGames = async (req, res) => {
  */
 const createGame = async (req, res) => {
     const { publisherId, name, platform, storeId, bundleId, appVersion, isPublished } = req.body;
+    const transaction = await db.sequelize.transaction()
     try {
-      const game = await db.Game.create({ publisherId, name, platform, storeId, bundleId, appVersion, isPublished })
+      const game = await db.Game.create({ publisherId, name, platform, storeId, bundleId, appVersion, isPublished }, { transaction })
+      await transaction.commit()
       return res.send(game)
     } catch (err) {
+      await transaction.rollback()
       console.error('***There was an error creating a game', err);
       return res.status(400).send(err);
     }
@@ -64,12 +67,15 @@ const deleteGame = async (req, res) => {
 const updateGame = async (req, res) => {
     // eslint-disable-next-line radix
     const id = parseInt(req.params.id);
+    const transaction = await db.sequelize.transaction()
     const { publisherId, name, platform, storeId, bundleId, appVersion, isPublished } = req.body;
     try {
       const game = await db.Game.findByPk(id)
-      await game.update({ publisherId, name, platform, storeId, bundleId, appVersion, isPublished })
+      await game.update({ publisherId, name, platform, storeId, bundleId, appVersion, isPublished }, transaction)
+      await transaction.commit()
       return res.send(game)
     } catch (err) {
+      await transaction.rollback()
       console.error('***Error updating game', err);
       return res.status(400).send(err);
     }
@@ -108,6 +114,7 @@ const searchGames = async (req, res) => {
  * @returns 
  */
 const populateGames = async (req, res) => {
+  const transaction = await db.sequelize.transaction()
     try {
       // TO DO: Use a message broker for this kind of request
       // Loop over the platforms
@@ -118,7 +125,6 @@ const populateGames = async (req, res) => {
         // It will avoid memory leak
         const { data: topGamesJSON } = await axios({
           url: bucketPath,
-          // responseType: 'stream'
         })
         if (!topGamesJSON || !topGamesJSON.length) throw 'ERR_NO_DATA_FOUND'
         // Loop over the data
@@ -131,13 +137,15 @@ const populateGames = async (req, res) => {
             const gameEntry = { publisherId, name, platform, bundleId, appVersion, storeId, isPublished: true }
             console.log(gameEntry)
             // Create the entry
-            await db.Game.findOrCreate({ where: { ...gameEntry }, defaults: { ...gameEntry } })
+            await db.Game.findOrCreate({ where: { ...gameEntry }, defaults: { ...gameEntry }, transaction })
           }
           
         }
       }
+      await transaction.commit()
       return res.send({ updated: true })
     } catch (error) {
+      await transaction.rollback()
       console.error('***Error populating database', error);
       return res.status(400).send(error);
     }  
